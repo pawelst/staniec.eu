@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="About Paweł Staniec.">
+  <title>About &mdash; staniec.eu</title>
+  <link rel="preload" href="/style.css" as="style">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a href="/" class="site-name">staniec.eu</a>
+      <nav>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="page-header">
+        <h1>About</h1>
+      </div>
+
+      <div class="prose">
+        <p>Hi, I'm Paweł Staniec.</p>
+        <p>This is my personal corner of the internet — a place to write about things I find interesting, things I'm working on, and things I'm learning.</p>
+        <p>You can reach me at <a href="mailto:hello@staniec.eu">hello@staniec.eu</a>.</p>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      &copy; <span id="yr"></span> Paweł Staniec
+    </footer>
+  </div>
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>
