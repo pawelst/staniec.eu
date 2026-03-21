@@ -1,1 +1,36 @@
-Hello
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Writings by Paweł Staniec.">
+  <title>staniec.eu</title>
+  <link rel="preload" href="/style.css" as="style">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <a href="/" class="site-name">staniec.eu</a>
+      <nav>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+
+    <main>
+      <ul class="post-list">
+        <li>
+          <time datetime="2026-03-21">March 21, 2026</time>
+          <a href="/posts/hello-world.html" class="post-title">Hello, World</a>
+          <p class="post-excerpt">Every blog starts somewhere. This one starts here — a few words about what this place is and what it might become.</p>
+        </li>
+      </ul>
+    </main>
+
+    <footer class="site-footer">
+      &copy; <span id="yr"></span> Paweł Staniec
+    </footer>
+  </div>
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>
