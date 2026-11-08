@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <script>(function(){var t;try{t=localStorage.getItem('theme')}catch(e){}document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'})()</script>
   <meta name="description" content="About Paweł Staniec.">
   <title>About &mdash; staniec.eu</title>
   <link rel="preload" href="/style.css" as="style">
@@ -11,9 +13,11 @@
 <body>
   <div class="container">
     <header class="site-header">
-      <a href="/" class="site-name">staniec.eu</a>
+      <a href="/" class="site-name"><span class="tilde">~/</span>staniec.eu</a>
       <nav>
-        <a href="/about.html">About</a>
+        <a href="https://pawel.staniec.eu" class="cd"><span class="cmd" aria-hidden="true">cd </span>Blog<i class="caret" aria-hidden="true"></i></a>
+        <a href="/about.html" class="active">About</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Dark mode"></button>
       </nav>
     </header>
 
@@ -30,9 +34,38 @@
     </main>
 
     <footer class="site-footer">
-      &copy; <span id="yr"></span> Paweł Staniec
+      <span>&copy; <span id="yr"></span> Paweł Staniec</span>
+      <a href="https://github.com/pawelst" rel="noopener">github</a>
+      <a href="https://linkedin.com/in/pawelstaniec" rel="noopener">linkedin</a>
     </footer>
   </div>
   <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var button = document.getElementById('theme-toggle');
+      var systemLight = matchMedia('(prefers-color-scheme: light)');
+
+      function apply(theme) {
+        root.dataset.theme = theme;
+        button.setAttribute('aria-pressed', theme === 'dark');
+      }
+
+      window.setTheme = function (theme) {
+        theme = theme || (root.dataset.theme === 'dark' ? 'light' : 'dark');
+        apply(theme);
+        try { localStorage.setItem('theme', theme); } catch (e) {}
+        return theme;
+      };
+
+      button.addEventListener('click', function () { window.setTheme(); });
+      systemLight.addEventListener('change', function (event) {
+        var saved = null;
+        try { saved = localStorage.getItem('theme'); } catch (e) {}
+        if (!saved) apply(event.matches ? 'light' : 'dark');
+      });
+      apply(root.dataset.theme);
+    })();
+  </script>
 </body>
 </html>
