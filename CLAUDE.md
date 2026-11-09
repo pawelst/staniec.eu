@@ -14,7 +14,7 @@ staniec.eu/
 ├── CNAME                      # GitHub Pages custom domain (staniec.eu)
 ├── style.css                  # Shared stylesheet (all pages link to this)
 ├── index.html                 # Home — animated boot console
-└── about.html                 # About page
+└── about.html                 # About page — animated `cat about.md`
 ```
 
 ## Tech Stack
@@ -23,7 +23,7 @@ staniec.eu/
 - **Hosting:** GitHub Pages
 - **Domain:** staniec.eu (configured via CNAME)
 - **CSS:** Single shared `style.css`, no preprocessor
-- **JS:** Minimal inline only (current year in footer, command prompt on the home page)
+- **JS:** Minimal inline only (current year in footer, command prompt on the home and about pages)
 - **No build system, frameworks, or dependencies**
 
 ## Development Workflow
@@ -44,7 +44,7 @@ staniec.eu/
 
 The home page animation is CSS only. Each line in `.console` uses class `a` and an inline `--t` (start time in seconds). Lines reserve their space, so nothing shifts while the log plays.
 
-The final prompt accepts commands through the inline script in `index.html`. To add one, extend `routes` (for navigation) and the `help` text.
+The final prompt accepts commands through the inline script in `index.html`. To add one, extend `routes` (for navigation) and the `help` text. `about.html` uses the same console classes and has its own copy of the script, with paths relative to `~/about`.
 
 ## Adding a New Page
 
@@ -52,7 +52,7 @@ Create a new `.html` file at the root (e.g., `projects.html` → `staniec.eu/pro
 
 ## CSS Notes
 
-`style.css` is structured in order: reset → tokens → layout → header → theme toggle → terminal primitives → boot console → prose → footer → reduced motion. Colors are tokens on `:root`: dark by default (the pawel.staniec.eu palette), overridden automatically via `@media (prefers-color-scheme: light)`. Keep styles minimal.
+`style.css` is structured in order: reset → tokens → layout → header → theme toggle → terminal primitives → boot console → footer → reduced motion. Colors are tokens on `:root`: dark by default (the pawel.staniec.eu palette), overridden automatically via `@media (prefers-color-scheme: light)`. Keep styles minimal.
 
 The theme follows the system until a visitor chooses one, either with the header toggle or the `theme` command; the choice is stored in `localStorage` and applied by `data-theme` on `<html>`. New pages need the head script, the toggle button and the theme script from `about.html`.
 

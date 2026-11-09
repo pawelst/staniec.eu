@@ -16,20 +16,24 @@
       <a href="/" class="site-name"><span class="tilde">~/</span>staniec.eu</a>
       <nav>
         <a href="https://pawel.staniec.eu" class="cd"><span class="cmd" aria-hidden="true">cd </span>Blog<i class="caret" aria-hidden="true"></i></a>
-        <a href="/about.html" class="active">About</a>
+        <a href="/about.html" class="cd active"><span class="cmd" aria-hidden="true">cd </span>About<i class="caret" aria-hidden="true"></i></a>
         <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Dark mode"></button>
       </nav>
     </header>
 
     <main>
-      <div class="page-header">
-        <h1>About</h1>
-      </div>
-
-      <div class="prose">
-        <p>Hi, I'm Paweł Staniec.</p>
-        <p>This is my personal corner of the internet — a place to write about things I find interesting, things I'm working on, and things I'm learning.</p>
-        <p>You can reach me at <a href="mailto:hello@staniec.eu">hello@staniec.eu</a>.</p>
+      <h1 class="sr-only">About</h1>
+      <div class="console">
+<div><span class="user">pawel@staniec</span>:~/about$ <span class="type" style="--n:12;--t:.3">cat about.md</span><i class="caret typing-caret" style="--t:1.25" aria-hidden="true"></i></div>
+<div class="a md bright" style="--t:1.4" aria-hidden="true"># About</div>
+<div class="gap md"></div>
+<div class="a md" style="--t:1.5">Hi, I'm Paweł Staniec.</div>
+<div class="gap md"></div>
+<div class="a md" style="--t:1.6">This is my personal corner of the internet — a place to write about things I find interesting, things I'm working on, and things I'm learning.</div>
+<div class="gap md"></div>
+<div class="a md" style="--t:1.7">You can reach me at &lt;<a href="mailto:hello@staniec.eu">hello@staniec.eu</a>&gt;.</div>
+<div id="out" aria-live="polite"></div>
+<div class="a shell-line" style="--t:1.85"><span class="shell-prompt"><span class="user">pawel@staniec</span>:~/about$</span><form id="shell" class="cmdline" autocomplete="off"><label class="sr-only" for="cmd">Command</label><input id="cmd" type="text" maxlength="60" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><i id="cmd-caret" class="caret" aria-hidden="true"></i></form></div>
       </div>
     </main>
 
@@ -65,6 +69,72 @@
         if (!saved) apply(event.matches ? 'light' : 'dark');
       });
       apply(root.dataset.theme);
+    })();
+  </script>
+  <script>
+    (function () {
+      var blog = 'https://pawel.staniec.eu';
+      var routes = new Map([['cd', '/'], ['cd ..', '/'], ['cd ~', '/'], ['cd blog', blog], ['cd ../blog', blog]]);
+      var help = 'Available commands:\n  cat about.md  print this page again\n  cd ..         back to the home page\n  cd blog       open the blog\n  theme         toggle light/dark mode\n  theme light   use light mode\n  theme dark    use dark mode\n  help          show this list';
+      var form = document.getElementById('shell');
+      var input = document.getElementById('cmd');
+      var caret = document.getElementById('cmd-caret');
+      var out = document.getElementById('out');
+      var consoleEl = document.querySelector('.console');
+
+      function print(text, className) {
+        var line = document.createElement('div');
+        if (className) line.className = className;
+        line.textContent = text;
+        out.appendChild(line);
+      }
+
+      function echo(command) {
+        var line = document.createElement('div');
+        var user = document.createElement('span');
+        user.className = 'user';
+        user.textContent = 'pawel@staniec';
+        line.append(user, ':~/about$ ' + command);
+        out.appendChild(line);
+      }
+
+      function aboutText() {
+        return Array.from(consoleEl.querySelectorAll('.md'), function (el) { return el.textContent; }).join('\n');
+      }
+
+      function syncCaret() {
+        caret.style.setProperty('--c', input.selectionStart);
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var command = input.value.trim().replace(/\s+/g, ' ');
+        input.value = '';
+        syncCaret();
+        echo(command);
+        var theme = /^theme(?: (light|dark))?$/.exec(command);
+        if (command === 'help') print(help);
+        else if (command === 'cat about.md') print(aboutText());
+        else if (theme) print('theme set to ' + window.setTheme(theme[1]));
+        else if (routes.has(command)) location.href = routes.get(command);
+        else if (command) print('unknown command: ' + command, 'warn');
+        form.scrollIntoView({ block: 'nearest' });
+      });
+
+      ['input', 'keyup', 'click'].forEach(function (name) {
+        input.addEventListener(name, syncCaret);
+      });
+
+      consoleEl.addEventListener('click', function () {
+        if (String(getSelection()) === '') input.focus({ preventScroll: true });
+      });
+
+      if (matchMedia('(hover: hover)').matches) {
+        var delay = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1900;
+        setTimeout(function () {
+          if (document.activeElement === document.body) input.focus({ preventScroll: true });
+        }, delay);
+      }
     })();
   </script>
 </body>

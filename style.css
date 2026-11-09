@@ -200,6 +200,13 @@ html:not([data-theme]) .theme-toggle { display: none; }
   animation: hide 0.01s linear 1.25s forwards;
 }
 
+/* Follows a .type command, gone once it finishes typing */
+.typing-caret {
+  margin-left: 1px;
+  color: var(--accent);
+  animation: hide 0.01s linear calc(var(--t) * 1s) forwards;
+}
+
 /* Blog link types "cd" on hover */
 .cd { position: relative; }
 
@@ -312,26 +319,12 @@ html:not([data-theme]) .theme-toggle { display: none; }
 
 @keyframes count { from { --mbp: 0; } }
 
-/* Page header */
-.page-header {
-  margin-bottom: 2.5rem;
-}
-
 h1 {
   color: var(--strong);
   font-size: clamp(2rem, 5vw, 2.9rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
   font-weight: 700;
-}
-
-/* Prose */
-.prose {
-  max-width: var(--read);
-}
-
-.prose p {
-  margin-bottom: 1.25rem;
 }
 
 /* Footer */
@@ -353,5 +346,5 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .a, .type, .count, .caret, .cd:hover .caret, .cd:focus-visible .caret, .cmdline:focus-within .caret { animation: none; }
   .cd .cmd, body, .theme-toggle::before { transition: none; }
-  .logo-caret { display: none; }
+  .logo-caret, .typing-caret { display: none; }
 }
