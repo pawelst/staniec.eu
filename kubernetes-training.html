@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <script>(function(){var t;try{t=localStorage.getItem('theme')}catch(e){}document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'})()</script>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Kubernetes training in a simulated terminal.">
+  <title>Kubernetes training, staniec.eu</title>
+  <link rel="preload" href="/style.css" as="style">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="lesson-page">
+  <div class="container">
+    <header class="site-header">
+      <a href="/" class="site-name"><span class="tilde">~/</span>staniec.eu</a>
+      <nav>
+        <a href="https://pawel.staniec.eu" class="cd"><span class="cmd" aria-hidden="true">cd </span>Blog<i class="caret" aria-hidden="true"></i></a>
+        <a href="/about.html" class="cd"><span class="cmd" aria-hidden="true">cd </span>About<i class="caret" aria-hidden="true"></i></a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Dark mode"></button>
+      </nav>
+    </header>
+
+    <main>
+      <h1 class="sr-only">Kubernetes training</h1>
+      <div class="console">
+<div class="a bright" style="--t:.2">Kubernetes training. Lesson 1: kubectl and your shell</div>
+<div class="a dim" style="--t:.4">Simulated shell and cluster. Nothing here leaves your browser.</div>
+<div class="a dim" style="--t:.6">Type help for commands, reset to start over, exit to leave.</div>
+<div class="gap"></div>
+<div id="out" aria-live="polite"></div>
+<div class="a shell-line" style="--t:.8"><span class="shell-prompt"><span class="user">student@k8s</span>:~$</span><form id="shell" class="cmdline" autocomplete="off"><label class="sr-only" for="cmd">Command</label><input id="cmd" type="text" maxlength="120" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><i id="cmd-caret" class="caret" aria-hidden="true"></i></form></div>
+      </div>
+      <div id="status" class="a lesson-status" style="--t:.8"><div id="progress" class="dim"></div><div id="goal" class="bright" aria-live="polite"></div><div id="hint"></div></div>
+    </main>
+
+    <footer class="site-footer">
+      <span>&copy; <span id="yr"></span> Paweł Staniec</span>
+      <a href="https://github.com/pawelst" rel="noopener">github</a>
+      <a href="https://linkedin.com/in/pawelstaniec" rel="noopener">linkedin</a>
+    </footer>
+  </div>
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var button = document.getElementById('theme-toggle');
+      var systemLight = matchMedia('(prefers-color-scheme: light)');
+
+      function apply(theme) {
+        root.dataset.theme = theme;
+        button.setAttribute('aria-pressed', theme === 'dark');
+      }
+
+      window.setTheme = function (theme) {
+        theme = theme || (root.dataset.theme === 'dark' ? 'light' : 'dark');
+        apply(theme);
+        try { localStorage.setItem('theme', theme); } catch (e) {}
+        return theme;
+      };
+
+      button.addEventListener('click', function () { window.setTheme(); });
+      systemLight.addEventListener('change', function (event) {
+        var saved = null;
+        try { saved = localStorage.getItem('theme'); } catch (e) {}
+        if (!saved) apply(event.matches ? 'light' : 'dark');
+      });
+      apply(root.dataset.theme);
+    })();
+  </script>
+  <script>
+    (function () {
+      var HOME = '/home/student';
+      var CONFIG = HOME + '/.kube/config';
+      var BASHRC = HOME + '/.bashrc';
+
+      var CONFIG_FILE = [
+        'apiVersion: v1',
+        'kind: Config',
+        'current-context: training',
+        'clusters:',
+        '- name: training',
+        '  cluster:',
+        '    server: https://10.0.0.10:6443',
+        'contexts:',
+        '- name: training',
+        '  context:',
+        '    cluster: training',
+        '    user: student',
+        '    namespace: default',
+        'users:',
+        '- name: student',
+        '  user:',
+        '    client-certificate-data: REDACTED',
+        '    client-key-data: REDACTED'
+      ].join('\n');
+
+      var NODES = [
+        'NAME       STATUS   ROLES           AGE   VERSION',
+        'cp-1       Ready    control-plane   12d   v1.33.1',
+        'worker-1   Ready    <none>          12d   v1.33.1',
+        'worker-2   Ready    <none>          12d   v1.33.1'
+      ];
+
+      var POD_HEADER = 'NAME                           READY   STATUS    RESTARTS   AGE';
+      var PODS = {
+        'kube-system': [
+          'coredns-5d78c9869d-7xk2p',
+          'coredns-5d78c9869d-q9vnt',
+          'etcd-cp-1',
+          'kube-apiserver-cp-1',
+          'kube-controller-manager-cp-1',
+          'kube-proxy-8hz4l',
+          'kube-proxy-fj2wd',
+          'kube-proxy-tm6rc',
+          'kube-scheduler-cp-1'
+        ],
+        monitoring: [
+          'grafana-6f9d8c7b5d-x2lmk',
+          'node-exporter-5kq9z',
+          'node-exporter-h7dpl',
+          'node-exporter-vr2cn',
+          'prometheus-server-0'
+        ]
+      };
+
+      var NAMESPACES = [
+        'NAME              STATUS   AGE',
+        'default           Active   12d',
+        'kube-node-lease   Active   12d',
+        'kube-public       Active   12d',
+        'kube-system       Active   12d',
+        'monitoring        Active   12d'
+      ];
+
+      var RESOURCES = {
+        no: 'nodes', node: 'nodes', nodes: 'nodes',
+        po: 'pods', pod: 'pods', pods: 'pods',
+        ns: 'namespaces', namespace: 'namespaces', namespaces: 'namespaces'
+      };
+
+      // Each step passes on the state it reaches, so any valid command counts.
+      // Guided steps introduce every new command. Later phases may only reuse them.
+      var steps = [
+        {
+          phase: 'guided',
+          goal: 'Print the KUBECONFIG environment variable.',
+          hint: 'echo $KUBECONFIG',
+          commands: ['echo $NAME   print a variable'],
+          done: function (s) { return s.last && s.last.kind === 'kubeconfig'; },
+          learned: 'kubectl reads clusters, credentials and the current context from this file. If KUBECONFIG is unset, it falls back to ~/.kube/config.'
+        },
+        {
+          phase: 'guided',
+          goal: 'Ask kubectl which context it is using.',
+          hint: 'kubectl config current-context',
+          commands: ['kubectl config current-context'],
+          done: function (s) { return s.last && s.last.kind === 'context'; },
+          learned: 'A context names a cluster, a user and a default namespace. Check it before you run anything you can\'t undo.'
+        },
+        {
+          phase: 'guided',
+          goal: 'Make k a shell alias for kubectl.',
+          hint: 'alias k=kubectl',
+          commands: ['alias name=value   no spaces around ='],
+          done: function (s) { return s.aliases.k === 'kubectl'; },
+          learned: 'The shell swaps k for kubectl before running the command. kubectl never knows.'
+        },
+        {
+          phase: 'guided',
+          goal: 'Using k, list the pods in the kube-system namespace.',
+          hint: 'k get pods -n kube-system',
+          commands: ['k get pods', '-n <namespace>   run one command in that namespace'],
+          done: function (s) { return podsIn(s, 'kube-system') && s.last.via; },
+          near: function (s) { return podsIn(s, 'kube-system'); },
+          learned: 'Everything after k goes to kubectl unchanged. -n picks the namespace for one command. Without it, kubectl uses the one from your context, here default.'
+        },
+        {
+          phase: 'guided',
+          goal: 'Aliases die with the shell. Append yours to ~/.bashrc so new shells get it.',
+          hint: "echo 'alias k=kubectl' >> ~/.bashrc",
+          commands: ["echo 'text' >> file   append a line to a file"],
+          done: function (s) { return bashrcHasAlias(s); },
+          learned: '>> appends to a file. Interactive shells read ~/.bashrc on startup, so every new shell has k.'
+        },
+        {
+          phase: 'prompted',
+          goal: 'Using k, list the nodes in the cluster.',
+          hint: 'k get nodes',
+          commands: ['k get <resource>'],
+          done: function (s) { return isGet(s, 'nodes') && s.last.via; },
+          near: function (s) { return isGet(s, 'nodes'); },
+          learned: 'Same shape as before with a different resource: k get <resource>.'
+        },
+        {
+          phase: 'prompted',
+          goal: 'Using k, list the pods in the monitoring namespace.',
+          hint: 'k get pods -n monitoring',
+          commands: ['k get pods', '-n <namespace>   run one command in that namespace'],
+          done: function (s) { return podsIn(s, 'monitoring') && s.last.via; },
+          near: function (s) { return podsIn(s, 'monitoring'); },
+          learned: 'Same command, different -n. Pods live in one namespace. Nodes belong to the whole cluster, so they need no -n.'
+        },
+        {
+          phase: 'on your own',
+          goal: 'Using k, print the current context.',
+          commands: ['kubectl config current-context', 'k   your alias for kubectl'],
+          done: function (s) { return s.last && s.last.kind === 'context' && s.last.via; },
+          near: function (s) { return s.last && s.last.kind === 'context'; },
+          learned: 'k works for every kubectl command, not only get.'
+        },
+        {
+          phase: 'on your own',
+          goal: 'Using k, list the pods in the kube-system namespace.',
+          commands: ['k get pods', '-n <namespace>   run one command in that namespace'],
+          done: function (s) { return podsIn(s, 'kube-system') && s.last.via; },
+          near: function (s) { return podsIn(s, 'kube-system'); },
+          learned: 'You can check which config and context you are on, and every new shell has the short form.'
+        }
+      ];
+
+      var form = document.getElementById('shell');
+      var input = document.getElementById('cmd');
+      var caret = document.getElementById('cmd-caret');
+      var out = document.getElementById('out');
+      var progressEl = document.getElementById('progress');
+      var goalEl = document.getElementById('goal');
+      var hintEl = document.getElementById('hint');
+      var consoleEl = document.querySelector('.console');
+
+      var state, step;
+      var history = [];
+      var historyAt = 0;
+
+      function fresh() {
+        var files = {};
+        files[CONFIG] = CONFIG_FILE;
+        files[BASHRC] = '# ~/.bashrc';
+        return { env: { HOME: HOME, KUBECONFIG: CONFIG }, aliases: {}, files: files, last: null };
+      }
+
+      function isGet(s, resource) {
+        return s.last && s.last.kind === 'get' && s.last.resource === resource;
+      }
+
+      function podsIn(s, namespace) {
+        return isGet(s, 'pods') && s.last.ns === namespace;
+      }
+
+      function podRow(name) {
+        return name.padEnd(31) + '1/1     Running   0          12d';
+      }
+
+      function bashrcHasAlias(s) {
+        return s.files[BASHRC].split('\n').some(function (line) {
+          var words = tokenize(line, s.env);
+          return words && words[0] === 'alias' && words.indexOf('k=kubectl') > 0;
+        });
+      }
+
+      // Splits a command line the way a shell would: quotes, $VAR, ~, and the | > >> operators.
+      function tokenize(line, env) {
+        var words = [], current = '', started = false, quote = null, i = 0;
+
+        function flush() {
+          if (started) words.push(current);
+          current = '';
+          started = false;
+        }
+
+        function expand() {
+          var match = /^\$(?:(\w+)|\{(\w+)\})/.exec(line.slice(i));
+          if (!match) { current += '$'; started = true; i++; return; }
+          current += env[match[1] || match[2]] || '';
+          if (quote) started = true; else started = started || current !== '';
+          i += match[0].length;
+        }
+
+        while (i < line.length) {
+          var c = line[i];
+          if (quote === "'") {
+            if (c === "'") quote = null; else current += c;
+            i++;
+          } else if (quote === '"') {
+            if (c === '$') { expand(); continue; }
+            if (c === '"') quote = null; else current += c;
+            i++;
+          } else if (c === ' ') {
+            flush();
+            i++;
+          } else if (c === "'" || c === '"') {
+            quote = c;
+            started = true;
+            i++;
+          } else if (c === '$') {
+            expand();
+          } else if (c === '|') {
+            flush();
+            words.push({ op: '|' });
+            i++;
+          } else if (c === '>') {
+            flush();
+            var append = line[i + 1] === '>';
+            words.push({ op: append ? '>>' : '>' });
+            i += append ? 2 : 1;
+          } else if (c === '~' && !started && (i + 1 === line.length || /[\/ ]/.test(line[i + 1]))) {
+            current += HOME;
+            started = true;
+            i++;
+          } else {
+            current += c;
+            started = true;
+            i++;
+          }
+        }
+        if (quote) return null;
+        flush();
+        return words;
+      }
+
+      function resolvePath(path) {
+        return path[0] === '/' ? path : HOME + '/' + path.replace(/^\.\//, '');
+      }
+
+      function kubectl(args, via) {
+        var ns = null, all = false, rest = [];
+        for (var i = 0; i < args.length; i++) {
+          var a = args[i];
+          if (a === '-n' || a === '--namespace') ns = args[++i];
+          else if (/^(-n|--namespace)=/.test(a)) ns = a.slice(a.indexOf('=') + 1);
+          else if (a === '-A' || a === '--all-namespaces') all = true;
+          else if (a === '-o' || a === '--output') i++;
+          else if (a[0] !== '-') rest.push(a);
+        }
+
+        var reachable = !state.env.KUBECONFIG || state.env.KUBECONFIG === CONFIG;
+
+        if (rest[0] === 'config') {
+          if (!reachable) return 'error: current-context is not set';
+          if (rest[1] === 'current-context' || rest[1] === 'get-contexts' || rest[1] === 'view') {
+            state.last = { kind: 'context', via: via };
+            if (rest[1] === 'current-context') return 'training';
+            if (rest[1] === 'view') return CONFIG_FILE;
+            return 'CURRENT   NAME       CLUSTER    AUTHINFO   NAMESPACE\n*         training   training   student    default';
+          }
+          return 'error: unknown command "' + (rest[1] || '') + '" for "kubectl config"';
+        }
+
+        if (rest[0] === 'get') {
+          if (!rest[1]) return 'error: Required resource not specified.';
+          var resource = RESOURCES[rest[1]];
+          if (!resource) return 'error: the server doesn\'t have a resource type "' + rest[1] + '"';
+          if (!reachable) return 'The connection to the server localhost:8080 was refused - did you specify the right host or port?';
+          state.last = { kind: 'get', resource: resource, ns: ns, via: via };
+          if (resource === 'nodes') return NODES.join('\n');
+          if (resource === 'namespaces') return NAMESPACES.join('\n');
+          if (all) {
+            var rows = ['NAMESPACE     ' + POD_HEADER];
+            Object.keys(PODS).forEach(function (name) {
+              PODS[name].forEach(function (pod) { rows.push(name.padEnd(14) + podRow(pod)); });
+            });
+            return rows.join('\n');
+          }
+          if (Object.prototype.hasOwnProperty.call(PODS, ns)) return [POD_HEADER].concat(PODS[ns].map(podRow)).join('\n');
+          return 'No resources found in ' + (ns || 'default') + ' namespace.';
+        }
+
+        if (rest[0]) return 'error: unknown command "' + rest[0] + '" for "kubectl"';
+        return 'kubectl controls the Kubernetes cluster manager.\nThis training shell knows: get, config.';
+      }
+
+      function setAlias(args) {
+        if (!args.length) {
+          return Object.keys(state.aliases).map(function (name) {
+            return "alias " + name + "='" + state.aliases[name] + "'";
+          }).join('\n');
+        }
+        var lines = [];
+        args.forEach(function (arg) {
+          var at = arg.indexOf('=');
+          if (at === 0) lines.push('-bash: alias: `' + arg + "': invalid alias name");
+          else if (at > 0) state.aliases[arg.slice(0, at)] = arg.slice(at + 1);
+          else if (state.aliases[arg]) lines.push('alias ' + arg + "='" + state.aliases[arg] + "'");
+          else lines.push('-bash: alias: ' + arg + ': not found');
+        });
+        return lines.join('\n');
+      }
+
+      function help() {
+        var lines = ['Shell: help, clear, reset, exit'];
+        if (steps[step]) lines.push('For this step:', '  ' + steps[step].commands.join('\n  '));
+        return lines.join('\n');
+      }
+
+      // Returns the command's output.
+      function execute(words, raw) {
+        var name = words[0];
+        var via = false;
+
+        if (Object.prototype.hasOwnProperty.call(state.aliases, name)) {
+          words = tokenize(state.aliases[name], state.env).concat(words.slice(1));
+          via = words[0] === 'kubectl';
+          name = words[0];
+        }
+
+        var args = words.slice(1);
+        var result = '';
+
+        switch (name) {
+          case 'kubectl':
+            return kubectl(args, via);
+          case 'echo':
+            result = args.join(' ');
+            break;
+          case 'printenv':
+            result = args.length
+              ? args.map(function (key) { return state.env[key] || ''; }).join('\n')
+              : Object.keys(state.env).map(function (key) { return key + '=' + state.env[key]; }).join('\n');
+            break;
+          case 'env':
+            result = Object.keys(state.env).map(function (key) { return key + '=' + state.env[key]; }).join('\n');
+            break;
+          case 'export':
+            args.forEach(function (arg) {
+              var at = arg.indexOf('=');
+              if (at > 0) state.env[arg.slice(0, at)] = arg.slice(at + 1).replace(/^~(?=\/|$)/, HOME);
+            });
+            return '';
+          case 'unset':
+            args.forEach(function (key) { delete state.env[key]; });
+            return '';
+          case 'alias':
+            return setAlias(args);
+          case 'unalias':
+            args.forEach(function (key) { delete state.aliases[key]; });
+            return '';
+          case 'source':
+          case '.':
+            if (!args[0]) return '-bash: source: filename argument required';
+            if (state.files[resolvePath(args[0])] === undefined) return '-bash: ' + args[0] + ': No such file or directory';
+            state.files[resolvePath(args[0])].split('\n').forEach(function (line) {
+              var parsed = tokenize(line, state.env);
+              if (parsed && parsed.length && String(parsed[0])[0] !== '#') execute(parsed, line);
+            });
+            return '';
+          case 'cat':
+            if (!args[0]) return '';
+            var file = state.files[resolvePath(args[0])];
+            return file === undefined ? 'cat: ' + args[0] + ': No such file or directory' : file;
+          case 'help':
+            return help();
+          default:
+            return '-bash: ' + name + ': command not found';
+        }
+
+        if (/KUBECONFIG/.test(raw) && result.indexOf(CONFIG) !== -1) state.last = { kind: 'kubeconfig' };
+        return result;
+      }
+
+      function run(raw) {
+        var trimmed = raw.trim();
+        if (trimmed === 'clear') { out.textContent = ''; return; }
+        if (trimmed === 'reset') { start(); return; }
+        if (trimmed === 'exit' || trimmed === 'cd ..') { location.href = '/'; return; }
+
+        state.last = null;
+        var words = tokenize(trimmed, state.env);
+        if (!words) { print('-bash: unexpected EOF while looking for matching quote', 'warn'); return; }
+        if (!words.length) return;
+
+        var pipeAt = words.findIndex(function (w) { return w.op === '|'; });
+        var left = pipeAt === -1 ? words : words.slice(0, pipeAt);
+        var right = pipeAt === -1 ? null : words.slice(pipeAt + 1);
+        var redirectAt = left.findIndex(function (w) { return w.op === '>' || w.op === '>>'; });
+        var redirect = redirectAt === -1 ? null : left[redirectAt];
+        var target = redirect && left[redirectAt + 1];
+        if (redirect) left = left.slice(0, redirectAt);
+
+        if (redirect && typeof target !== 'string') {
+          print('-bash: syntax error near unexpected token `newline\'', 'warn');
+          return;
+        }
+        if (right && right[0] !== 'grep') {
+          print('This training shell only pipes into grep.', 'warn');
+          return;
+        }
+
+        var result = left.length ? execute(left, trimmed) : '';
+
+        if (right) {
+          result = result.split('\n').filter(function (line) {
+            return line.indexOf(right[1] || '') !== -1;
+          }).join('\n');
+        }
+
+        if (redirect) {
+          var path = resolvePath(target);
+          var existing = redirect.op === '>>' && state.files[path] ? state.files[path] + '\n' : '';
+          state.files[path] = existing + result;
+        } else if (result) {
+          print(result, /^(-bash|error|cat:|The connection)/.test(result) ? 'warn' : '');
+        }
+
+        var current = steps[step];
+        if (current && current.near && !current.done(state) && current.near(state)) {
+          print('Right output, but this step wants your alias: k.', 'dim');
+        }
+
+        advance();
+      }
+
+      function advance() {
+        while (steps[step] && steps[step].done(state)) {
+          print('[  OK  ] ' + steps[step].goal, 'ok');
+          print(steps[step].learned, 'dim');
+          step++;
+        }
+        render();
+      }
+
+      function print(text, className) {
+        var line = document.createElement('div');
+        if (className) line.className = className;
+        line.textContent = text;
+        out.appendChild(line);
+      }
+
+      function echo(command) {
+        var line = document.createElement('div');
+        var user = document.createElement('span');
+        user.className = 'user';
+        user.textContent = 'student@k8s';
+        line.append(user, ':~$ ' + command);
+        out.appendChild(line);
+      }
+
+      function span(text, className) {
+        var el = document.createElement('span');
+        el.className = className;
+        el.textContent = text;
+        return el;
+      }
+
+      function render() {
+        var current = steps[step];
+        var filled = '#'.repeat(step) + '-'.repeat(steps.length - step);
+        if (current) {
+          progressEl.textContent = '[' + filled + '] ' + (step + 1) + '/' + steps.length + '  ' + current.phase;
+          goalEl.textContent = current.goal;
+        } else {
+          progressEl.textContent = '[' + filled + '] done';
+          goalEl.textContent = 'Lesson complete. reset to go again, exit to leave.';
+        }
+        renderHint();
+      }
+
+      // Guided steps colour the hint as you type. Prompted hints vanish once you start.
+      function renderHint() {
+        var current = steps[step];
+        var typed = input.value;
+        hintEl.textContent = '';
+        hintEl.style.visibility = 'visible';
+        if (!current) return;
+
+        if (current.phase === 'on your own') {
+          hintEl.append(span('No hint. help lists the commands.', 'dim'));
+        } else if (current.phase === 'prompted') {
+          hintEl.append(span('hint: ' + current.hint, 'dim'));
+          if (typed) hintEl.style.visibility = 'hidden';
+        } else {
+          var match = 0;
+          while (match < typed.length && typed[match] === current.hint[match]) match++;
+          var end = Math.max(match, Math.min(typed.length, current.hint.length));
+          hintEl.append(
+            span('type: ', 'dim'),
+            span(current.hint.slice(0, match), 'ok'),
+            span(current.hint.slice(match, end), 'warn'),
+            span(current.hint.slice(end), '')
+          );
+        }
+      }
+
+      function start() {
+        state = fresh();
+        step = 0;
+        out.textContent = '';
+        render();
+      }
+
+      function syncCaret() {
+        caret.style.setProperty('--c', input.selectionStart);
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var command = input.value;
+        input.value = '';
+        syncCaret();
+        echo(command);
+        if (command.trim()) history.push(command);
+        historyAt = history.length;
+        run(command);
+        renderHint();
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      });
+
+      input.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        event.preventDefault();
+        historyAt = Math.max(0, Math.min(history.length, historyAt + (event.key === 'ArrowUp' ? -1 : 1)));
+        input.value = history[historyAt] || '';
+        input.setSelectionRange(input.value.length, input.value.length);
+        syncCaret();
+        renderHint();
+      });
+
+      input.addEventListener('input', renderHint);
+
+      ['input', 'keyup', 'click'].forEach(function (name) {
+        input.addEventListener(name, syncCaret);
+      });
+
+      consoleEl.addEventListener('click', function () {
+        if (String(getSelection()) === '') input.focus({ preventScroll: true });
+      });
+
+      start();
+
+      if (matchMedia('(hover: hover)').matches) {
+        var delay = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 850;
+        setTimeout(function () {
+          if (document.activeElement === document.body) input.focus({ preventScroll: true });
+        }, delay);
+      }
+    })();
+  </script>
+</body>
+</html>

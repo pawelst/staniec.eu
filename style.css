@@ -298,6 +298,50 @@ html:not([data-theme]) .theme-toggle { display: none; }
   animation: blink 1.06s step-end infinite;
 }
 
+/* Training lesson: the terminal scrolls, the task panel stays pinned below it */
+.lesson-page .container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.lesson-page main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.5rem 1rem 1rem;
+}
+
+.lesson-page .console {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.lesson-page .site-footer {
+  margin-top: 0;
+  padding: 1rem;
+}
+
+.lesson-status {
+  flex: none;
+  margin-top: 1rem;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--line);
+  font: 13px/1.5 var(--mono);
+  font-variant-ligatures: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lesson-status .bright { color: var(--strong); }
+
+#hint { min-height: 1.5em; }
+
 /* Keeps iOS from zooming the page when the input is focused */
 @media (pointer: coarse) {
   .cmdline { font-size: 16px; }

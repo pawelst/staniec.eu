@@ -46,6 +46,10 @@ The home page animation is CSS only. Each line in `.console` uses class `a` and 
 
 The final prompt accepts commands through the inline script in `index.html`. To add one, extend `routes` (for navigation) and the `help` text. `about.html` uses the same console classes and has its own copy of the script, with paths relative to `~/about`.
 
+## Hidden Training Page
+
+`kubernetes-training.html` is deliberately not in the nav or the `help` text. It opens with `cd kubernetes-training` on the home prompt and has `noindex`. It runs a simulated shell and cluster inline, with no backend. Lessons are the `steps` array: each step has a `done(state)` check, so any valid command that reaches the goal passes. Every new command must appear first in a `guided` step; `prompted` and `on your own` steps only reuse what came before.
+
 ## Adding a New Page
 
 Create a new `.html` file at the root (e.g., `projects.html` → `staniec.eu/projects`). Copy the header/footer structure from an existing page and add a nav link in all pages.
