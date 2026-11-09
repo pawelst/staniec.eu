@@ -96,8 +96,8 @@
   </script>
   <script>
     (function () {
-      var routes = new Map([['cd blog', 'https://pawel.staniec.eu'], ['cd about', '/about.html'], ['cd kubernetes-training', '/kubernetes-training.html']]);
-      var help = 'Available commands:\n  cd blog       open the blog\n  cd about      open the about page\n  theme         toggle light/dark mode\n  theme light   use light mode\n  theme dark    use dark mode\n  help          show this list';
+      var routes = new Map([['cd blog', 'https://pawel.staniec.eu'], ['cd about', '/about.html'], ['cd kubernetes-training', '/kubernetes-training.html'], ['cd kubernetes-tutorial', '/kubernetes-training.html']]);
+      var help = 'Available commands:\n  ls            list directories\n  cd blog       open the blog\n  cd about      open the about page\n  theme         toggle light/dark mode\n  theme light   use light mode\n  theme dark    use dark mode\n  help          show this list';
       var form = document.getElementById('shell');
       var input = document.getElementById('cmd');
       var caret = document.getElementById('cmd-caret');
@@ -132,6 +132,7 @@
         echo(command);
         var theme = /^theme(?: (light|dark))?$/.exec(command);
         if (command === 'help') print(help);
+        else if (command === 'ls') print('about  blog  kubernetes-tutorial');
         else if (theme) print('theme set to ' + window.setTheme(theme[1]));
         else if (routes.has(command)) location.href = routes.get(command);
         else if (command) print('unknown command: ' + command, 'warn');
